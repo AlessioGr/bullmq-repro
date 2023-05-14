@@ -24,8 +24,3 @@ export async function generate_summary({ content }: SummarizeContentInput) {
 
   return summary;
 }
-
-/*export async function getCleanContent({
-    url,
-    forceReadability,
-  }) {*/
