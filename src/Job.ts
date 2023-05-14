@@ -1,7 +1,8 @@
-import { Job, Queue, Worker, DelayedError } from "bullmq";
+import { Job, Queue, Worker } from "bullmq";
 import { redisConnection } from "./constants";
 
-import { getCompletions } from "./Langchain";
+import { ChatOpenAI } from "langchain/chat_models/openai";
+import { HumanChatMessage, SystemChatMessage } from "langchain/schema";
 
 export async function setupSummarizeJob() {
   const summariesQueue = new Queue("job", {
@@ -13,39 +14,32 @@ export async function setupSummarizeJob() {
     async (job: Job, token: string) => {
       console.log(Date.now() + " - Worker is processing a summaries job...");
 
-      const completionPromise = getCompletions({
-        input: "Hellooo",
-        temperature: 0.0,
-        model: "gpt-3.5-turbo",
+      const chat = new ChatOpenAI({
+        temperature: 1.0,
+        modelName: "gpt-3.5-turbo",
+        openAIApiKey: "invalid key which will throw an error",
         maxTokens: 512,
-        presence_penalty: 0.0,
-        frequency_penalty: 0.0,
-        systemMessage: "You are a helpful assistant.",
+        presencePenalty: 0.0,
+        frequencyPenalty: 0.0,
       });
 
+      const response = chat.call([
+        new SystemChatMessage("You are a helpful assistant."),
+        new HumanChatMessage("input"),
+      ]);
+
       //! REMOVING THIS FIXES THE ISSUE
-      completionPromise.then(async (completion) => {
+      response.then(async (completion) => {
         const output = await completion.text;
       });
 
-      const summary = await completionPromise;
+      const summary = await response;
 
       return [];
     },
     {
       autorun: true,
       connection: redisConnection,
-      limiter: {
-        max: 4,
-        duration: 1000 * 10, // 10 seconds
-      },
-      removeOnComplete: {
-        count: 2,
-      },
-      removeOnFail: {
-        count: 10,
-      },
-      maxStalledCount: 10000000,
     }
   );
   worker.on("failed", (job: Job, error: Error) => {
@@ -75,7 +69,7 @@ export async function add_summaries_job() {
       attempts: 30,
       backoff: {
         type: "exponential",
-        delay: 5000,
+        delay: 1000,
       },
     }
   );

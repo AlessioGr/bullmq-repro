@@ -1,11 +1,11 @@
 export const redisConnection = {
-  host: "xx",
+  host: "xxx",
   port: 6379,
   username: "default",
-  password: "xx",
+  password: "xxx",
   tls: {
     // SNI (Server Name Indication) hostname
-    servername: "xx",
+    servername: "xxx",
     rejectUnauthorized: false,
   },
 };
