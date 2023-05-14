@@ -1,4 +1,4 @@
-import { Job, Queue, Worker } from "bullmq";
+import { Job, Queue, UnrecoverableError, Worker } from "bullmq";
 import { redisConnection } from "./constants";
 
 import { ChatOpenAI } from "langchain/chat_models/openai";
@@ -27,13 +27,6 @@ export async function setupSummarizeJob() {
         new SystemChatMessage("You are a helpful assistant."),
         new HumanChatMessage("input"),
       ]);
-
-      //! REMOVING THIS FIXES THE ISSUE
-      response.then(async (completion) => {
-        const output = await completion.text;
-      });
-
-      const summary = await response;
 
       return [];
     },
