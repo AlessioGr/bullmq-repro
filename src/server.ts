@@ -18,7 +18,5 @@ app.listen(port, () => {
 
   console.log("Job setup complete.");
 
-  add_summaries_job({
-    markdown: "hii",
-  });
+  add_summaries_job();
 });

@@ -1,26 +1,34 @@
 import { Job, Queue, Worker, DelayedError } from "bullmq";
 import { redisConnection } from "./constants";
 
-import { generate_summary } from "./Task";
-import { MarkdownTextSplitter } from "langchain/text_splitter";
+import { getCompletions } from "./Langchain";
 
 export async function setupSummarizeJob() {
   const summariesQueue = new Queue("job", {
     connection: redisConnection,
   });
 
-  //embeddingsQueue.obliterate({force: true});
-
   const worker = new Worker(
     "job",
     async (job: Job, token: string) => {
       console.log(Date.now() + " - Worker is processing a summaries job...");
 
-      const markdown: string = job.data.markdown;
-
-      const summary: { text: string } = await generate_summary({
-        content: markdown,
+      const completionPromise = getCompletions({
+        input: "Hellooo",
+        temperature: 0.0,
+        model: "gpt-3.5-turbo",
+        maxTokens: 512,
+        presence_penalty: 0.0,
+        frequency_penalty: 0.0,
+        systemMessage: "You are a helpful assistant.",
       });
+
+      //! REMOVING THIS FIXES THE ISSUE
+      completionPromise.then(async (completion) => {
+        const output = await completion.text;
+      });
+
+      const summary = await completionPromise;
 
       return [];
     },
@@ -53,33 +61,22 @@ export async function setupSummarizeJob() {
   });
 }
 
-export async function add_summaries_job({ markdown }: { markdown: string }) {
+export async function add_summaries_job() {
   const summariesQueue = new Queue("job", {
     connection: redisConnection,
   });
 
-  // Step 1: First split the markdown
-  if (markdown.length > 100) {
-    const splitter = new MarkdownTextSplitter();
-
-    const splitMarkdown = await splitter.createDocuments([markdown]);
-
-    for (const split of splitMarkdown) {
-      // Step 2: Add to queue
-      await summariesQueue.add(
-        "summaries_" + Date.now(),
-        {
-          markdown: split.pageContent,
-        },
-        {
-          attempts: 30,
-          backoff: {
-            type: "exponential",
-            delay: 5000,
-          },
-        }
-      );
-      console.log("Added to queue");
+  await summariesQueue.add(
+    "summaries_" + Date.now(),
+    {
+      markdown: "test",
+    },
+    {
+      attempts: 30,
+      backoff: {
+        type: "exponential",
+        delay: 5000,
+      },
     }
-  }
+  );
 }
