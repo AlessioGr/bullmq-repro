@@ -1,9 +1,6 @@
 import { Job, Queue, UnrecoverableError, Worker } from "bullmq";
 import { redisConnection } from "./constants";
 
-import { ChatOpenAI } from "langchain/chat_models/openai";
-import { HumanChatMessage, SystemChatMessage } from "langchain/schema";
-
 export async function setupSummarizeJob() {
   const summariesQueue = new Queue("job", {
     connection: redisConnection,
@@ -14,19 +11,14 @@ export async function setupSummarizeJob() {
     async (job: Job, token: string) => {
       console.log(Date.now() + " - Worker is processing a summaries job...");
 
-      const chat = new ChatOpenAI({
-        temperature: 1.0,
-        modelName: "gpt-3.5-turbo",
-        openAIApiKey: "invalid key which will throw an error",
-        maxTokens: 512,
-        presencePenalty: 0.0,
-        frequencyPenalty: 0.0,
-      });
-
-      const response = chat.call([
-        new SystemChatMessage("You are a helpful assistant."),
-        new HumanChatMessage("input"),
-      ]);
+      try {
+        throw new Error("test");
+      } catch (e) {
+        console.log("error, removing job");
+        await job.moveToFailed(e, token);
+        throw new UnrecoverableError(e.response.data.detail);
+        return;
+      }
 
       return [];
     },
