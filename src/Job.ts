@@ -28,7 +28,7 @@ export async function setupSummarizeJob() {
         new HumanChatMessage("input"),
       ]);
 
-      //! REMOVING THIS FIXES THE ISSUE
+      //! REMOVING THIS response.then FIXES THE ISSUE. Removing BOTH response.then and summary = await response will cause the issue to persist.
       response.then(async (completion) => {
         const output = await completion.text;
       });
