@@ -4,7 +4,6 @@ import {
   HumanChatMessage,
   SystemChatMessage,
 } from "langchain/schema";
-import { OpenAI } from "langchain/llms/openai";
 
 export async function getCompletions({
   input,

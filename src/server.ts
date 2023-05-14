@@ -1,7 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
 import { add_summaries_job, setupSummarizeJob } from "./Job";
-import fs from "fs";
 
 dotenv.config();
 
@@ -19,12 +18,7 @@ app.listen(port, () => {
 
   console.log("Job setup complete.");
 
-  // Read text from text.txt
-  const text = fs.readFileSync("./text.txt", "utf-8");
-
   add_summaries_job({
-    page_title: "test",
-    markdown: text,
-    siteDocId: "test" + Date.now(),
+    markdown: "hii",
   });
 });

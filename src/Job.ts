@@ -17,48 +17,12 @@ export async function setupSummarizeJob() {
       console.log(Date.now() + " - Worker is processing a summaries job...");
 
       const markdown: string = job.data.markdown;
-      const page_title: string = job.data.page_title;
-      const count: number = job.data.count;
 
-      /*
-       * STEP 2: Summaries from markdown
-       */
-      const newSummaries: string[] = [];
-      let putBackInQueue = false;
-      try {
-        if (markdown.length > 100) {
-          const summary: { text: string } = await generate_summary({
-            content: markdown,
-            page_title: page_title,
-            summary_id: count,
-          });
+      const summary: { text: string } = await generate_summary({
+        content: markdown,
+      });
 
-          const splitRegex = /(?:\n|\\n)\s*-\s*/g;
-
-          //While it has already split the document itself, we now need to split each summary. SO each bullet point
-          const split = ("\n" + summary.text).split(splitRegex);
-
-          for (let splitSummary of split) {
-            splitSummary = splitSummary.trim();
-            newSummaries.push(splitSummary);
-          }
-        }
-      } catch (e) {
-        console.warn("Error generating summaries. Retrying later.", e);
-        putBackInQueue = true;
-        throw e;
-        return;
-      }
-
-      if (putBackInQueue) {
-        console.log("Delaying job...");
-        await job.moveToDelayed(Date.now() + 10000, token);
-        console.log("Job delayed!");
-        throw new DelayedError("Error generating summaries. Delaying job.");
-        return;
-      }
-
-      return newSummaries;
+      return [];
     },
     {
       autorun: true,
@@ -89,15 +53,7 @@ export async function setupSummarizeJob() {
   });
 }
 
-export async function add_summaries_job({
-  siteDocId,
-  markdown,
-  page_title,
-}: {
-  siteDocId: string;
-  markdown: string;
-  page_title: string;
-}) {
+export async function add_summaries_job({ markdown }: { markdown: string }) {
   const summariesQueue = new Queue("job", {
     connection: redisConnection,
   });
@@ -108,18 +64,12 @@ export async function add_summaries_job({
 
     const splitMarkdown = await splitter.createDocuments([markdown]);
 
-    let count = 0;
     for (const split of splitMarkdown) {
-      count++;
-      const savedCount = count;
       // Step 2: Add to queue
-      const added = await summariesQueue.add(
-        "summaries_" + siteDocId,
+      await summariesQueue.add(
+        "summaries_" + Date.now(),
         {
-          siteDocId: siteDocId,
           markdown: split.pageContent,
-          page_title: page_title,
-          count: savedCount,
         },
         {
           attempts: 30,
